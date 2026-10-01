@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - DAZ T DESIGN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        navBg: '#112233', // Dark Navy Blue matching previous context
+                        navBgHover: '#1a334c',
+                        appBg: '#f0f4f8',
+                        primary: '#f5b82e', // Yellow accent from DAZ T DESIGN brand
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #f0f4f8;
+            background-image:
+                repeating-linear-gradient(0deg, rgba(17, 34, 51, 0.025) 0 1px, transparent 1px 6px),
+                repeating-linear-gradient(90deg, rgba(17, 34, 51, 0.025) 0 1px, transparent 1px 6px);
+        }
+        
+        /* Spinner Animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Toast Animation */
+        .toast-enter {
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toast-enter-active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast-leave {
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html.dark-mode body {
+            background-color: #0f172a;
+            background-image:
+                repeating-linear-gradient(0deg, rgba(245, 184, 46, 0.025) 0 1px, transparent 1px 6px),
+                repeating-linear-gradient(90deg, rgba(245, 184, 46, 0.025) 0 1px, transparent 1px 6px);
+            color: #e2e8f0;
+        }
+        html.dark-mode .bg-white { background-color: #172033 !important; }
+        html.dark-mode .bg-gray-50 { background-color: #111827 !important; }
+        html.dark-mode .bg-gray-100 { background-color: #263244 !important; }
+        html.dark-mode .text-gray-800,
+        html.dark-mode .text-gray-700 { color: #e2e8f0 !important; }
+        html.dark-mode .text-gray-600 { color: #cbd5e1 !important; }
+        html.dark-mode .text-gray-500,
+        html.dark-mode .text-gray-400 { color: #94a3b8 !important; }
+        html.dark-mode .border-gray-100,
+        html.dark-mode .border-gray-300 { border-color: #334155 !important; }
+        html.dark-mode input:not([type="checkbox"]) {
+            background-color: #0f172a;
+            border-color: #475569;
+            color: #f8fafc;
+        }
+        html.dark-mode input::placeholder { color: #94a3b8; }
+        html.dark-mode .text-navBg { color: #e2e8f0 !important; }
+        html.dark-mode a.text-navBg { color: #f5b82e !important; }
+        html.dark-mode #loginBtn {
+            background-color: #f5b82e;
+            color: #112233;
+        }
+        html.dark-mode #loginBtn:hover { background-color: #e8aa1d; }
+        html.dark-mode .peer:checked + span {
+            background-color: #f5b82e !important;
+            color: #112233 !important;
+        }
+    </style>
+    <script>
+        try {
+            if (localStorage.getItem('dazTheme') === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        } catch (error) {}
+    </script>
+</head>
+<body class="font-sans antialiased min-h-screen flex items-center justify-center p-4">
+
+    <!-- Custom Toast Notification (Hidden by default) -->
+    <div id="toastNotification" class="fixed top-6 right-6 lg:top-10 lg:right-10 flex items-center bg-white border-l-4 border-green-500 shadow-xl rounded-md px-4 py-3 z-50 toast-enter">
+        <div class="text-green-500 bg-green-100 rounded-full p-1.5 mr-3 flex items-center justify-center">
+            <i class="fa-solid fa-check text-sm w-4 h-4 text-center"></i>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-gray-800">สำเร็จ</p>
+            <p class="text-sm text-gray-600">เข้าสู่ระบบสำเร็จ!</p>
+        </div>
+    </div>
+
+    <main class="w-full max-w-md">
+        <!-- Logo / Brand Area -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-56 h-20 bg-white rounded-2xl shadow-lg mb-4 px-4">
+                <img src="logo.png" alt="DT Sport Wears" class="max-w-full max-h-full object-contain">
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-navBg"><span class="text-primary">DT</span> SPORT WEARS</h1>
+            <div class="mx-auto mt-3 flex max-w-sm items-center justify-center gap-3">
+                <span class="h-px w-8 shrink-0 bg-primary"></span>
+                <p class="text-sm font-medium text-gray-600">แพลตฟอร์มสั่งทำเสื้อผ้าออนไลน์ครบวงจร</p>
+                <span class="h-px w-8 shrink-0 bg-primary"></span>
+            </div>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            
+            <div class="p-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 text-center">เข้าสู่ระบบ</h2>
+                
+                <form id="loginForm" class="space-y-5" onsubmit="event.preventDefault(); handleLogin();">
+                    <fieldset>
+                        <legend class="block text-sm font-medium text-gray-700 mb-2">เลือกรูปแบบการเข้าสู่ระบบ</legend>
+                        <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1" role="radiogroup" aria-label="รูปแบบการเข้าสู่ระบบ">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="loginMode" value="customer" checked class="peer sr-only">
+                                <span class="flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold text-gray-600 transition peer-checked:bg-navBg peer-checked:text-white peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-navBg">
+                                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                                    ลูกค้าทั่วไป
+                                </span>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="loginMode" value="admin" class="peer sr-only">
+                                <span class="flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold text-gray-600 transition peer-checked:bg-navBg peer-checked:text-white peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-navBg">
+                                    <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                                    Admin
+                                </span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa-regular fa-envelope text-gray-400"></i>
+                            </div>
+                            <input type="email" id="email" required placeholder="your@email.com" 
+                                class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navBg focus:border-navBg transition text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-lock text-gray-400"></i>
+                            </div>
+                            <input type="password" id="password" required placeholder="••••••••" 
+                                class="w-full pl-10 pr-11 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navBg focus:border-navBg transition text-sm">
+                            <button type="button" id="togglePassword" aria-label="แสดงรหัสผ่าน" aria-pressed="false" title="แสดงรหัสผ่าน" class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-400 transition hover:text-navBg focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navBg rounded-r-lg">
+                                <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Forgot Password & Remember Me -->
+                    <div class="flex items-center justify-between mt-2">
+                        <div class="flex items-center">
+                            <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-navBg focus:ring-navBg border-gray-300 rounded cursor-pointer">
+                            <label for="remember-me" class="ml-2 block text-sm text-gray-600 cursor-pointer">
+                                จดจำฉันไว้
+                            </label>
+                        </div>
+                        <div class="text-sm">
+                            <a href="#" class="font-medium text-navBg hover:text-navBgHover underline-offset-2 hover:underline transition">
+                                ลืมรหัสผ่าน?
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="loginBtn" class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-navBg hover:bg-navBgHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navBg transition duration-200">
+                            <!-- Spinner Icon (Hidden by default) -->
+                            <svg id="btnSpinner" class="hidden animate-spin-custom -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="btnText">เข้าสู่ระบบ</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Register Section -->
+            <div class="bg-gray-50 border-t border-gray-100 px-8 py-5 text-center">
+                <p class="text-sm text-gray-600">
+                    ยังไม่มีบัญชีผู้ใช้? 
+                    <a href="#" onclick="event.preventDefault(); registerUser();" class="font-bold text-navBg hover:text-navBgHover hover:underline transition ml-1">สมัครสมาชิกใหม่</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer terms -->
+        <div class="text-center mt-6">
+            <p class="text-xs text-gray-400">
+                เมื่อเข้าสู่ระบบ แสดงว่าคุณยอมรับ <a href="#" class="underline">ข้อตกลงและเงื่อนไข</a> และ <a href="#" class="underline">นโยบายความเป็นส่วนตัว</a> ของเรา
+            </p>
+        </div>
+    </main>
+
+    <script>
+        const appScript = document.createElement('script');
+        appScript.src = 'app.js';
+        document.head.appendChild(appScript);
+
+        const passwordInput = document.getElementById('password');
+        const togglePasswordButton = document.getElementById('togglePassword');
+        const togglePasswordIcon = togglePasswordButton.querySelector('i');
+
+        togglePasswordButton.addEventListener('click', () => {
+            const shouldShowPassword = passwordInput.type === 'password';
+            passwordInput.type = shouldShowPassword ? 'text' : 'password';
+            togglePasswordButton.setAttribute('aria-pressed', String(shouldShowPassword));
+            togglePasswordButton.setAttribute('aria-label', shouldShowPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+            togglePasswordButton.title = shouldShowPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+            togglePasswordIcon.classList.toggle('fa-eye', !shouldShowPassword);
+            togglePasswordIcon.classList.toggle('fa-eye-slash', shouldShowPassword);
+        });
+
+        function handleLogin() {
+            // Get button elements
+            const btn = document.getElementById('loginBtn');
+            const spinner = document.getElementById('btnSpinner');
+            const btnText = document.getElementById('btnText');
+            
+            // Get form inputs
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginMode = document.querySelector('input[name="loginMode"]:checked').value;
+
+            // Simple validation check before loading
+            if(!email || !password) return;
+
+            const users = JSON.parse(localStorage.getItem('dazUsers') || '[]');
+            const registeredUser = users.find(user => user.email === email && user.password === password);
+            if (users.length > 0 && !registeredUser) {
+                alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+                return;
+            }
+
+            // 1. Change button state to Loading
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'กำลังเข้าสู่ระบบ...';
+
+            // 2. Simulate network request (1 second delay)
+            setTimeout(() => {
+                // Restore button state
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                spinner.classList.add('hidden');
+                btnText.textContent = 'เข้าสู่ระบบ';
+
+                // 3. Store the login state before opening the main menu.
+                const storage = document.getElementById('remember-me').checked ? localStorage : sessionStorage;
+                storage.setItem('dazLoggedIn', 'true');
+                storage.setItem('dazUser', email);
+
+                // 4. Show Success Toast Notification before redirecting.
+                showToast();
+                
+                // 5. Open the main menu after the success message is visible.
+                setTimeout(() => {
+                    window.location.href = loginMode === 'admin' ? 'AdminPage.html' : 'Mainpage.html';
+                }, 500);
+
+            }, 1000);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toastNotification');
+            
+            // Add active class to slide in
+            toast.classList.add('toast-enter-active');
+            
+            // Remove the toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-leave');
+                
+                // Reset classes after animation finishes
+                setTimeout(() => {
+                    toast.classList.remove('toast-leave');
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

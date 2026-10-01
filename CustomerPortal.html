@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - DAZ T DESIGN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        navBg: '#112233',
+                        appBg: '#f0f4f8',
+                        cardBorder: '#e2e8f0',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f0f4f8; }
+        .view-section { 
+            display: none; 
+            animation: fadeIn 0.3s ease-in-out; 
+        }
+        .view-section.active { 
+            display: block; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .order-progress-step {
+            opacity: 0;
+            animation: order-step-reveal 0.4s ease-out forwards;
+            animation-delay: calc(var(--step-index, 0) * 70ms);
+        }
+        .order-progress-marker {
+            transition: background-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+        }
+        .order-progress-step.is-current .order-progress-marker {
+            animation: order-current-step 0.5s ease-out both;
+            animation-delay: calc(var(--step-index, 0) * 70ms + 160ms);
+        }
+        @keyframes order-step-reveal {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes order-current-step {
+            0% { transform: scale(0.88); }
+            65% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .order-progress-step,
+            .order-progress-step.is-current .order-progress-marker {
+                animation: none;
+                opacity: 1;
+                transform: none;
+            }
+            .order-progress-marker { transition: none; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 font-sans antialiased min-h-screen flex flex-col py-8">
+
+    <main class="flex-grow px-4 md:px-10 max-w-6xl mx-auto w-full">
+
+        <div class="flex items-center justify-between mb-6">
+            <a href="Mainpage.html" class="bg-white rounded-lg border border-cardBorder px-3 py-2 shadow-sm hover:bg-gray-50 transition" aria-label="กลับหน้าหลัก">
+                <img src="logo.png" alt="DT Sport Wears" class="w-40 h-12 object-contain">
+            </a>
+            <span class="text-sm text-gray-500">ระบบจัดการคำสั่งซื้อ</span>
+        </div>
+
+        <section id="active-order-status" class="hidden mb-6 rounded-xl border border-cardBorder bg-white p-5 shadow-sm" aria-live="polite" aria-label="สถานะคำสั่งซื้อปัจจุบัน"></section>
+
+        <!-- ================== VIEW 1 : สร้างคำสั่งซื้อ ================== -->
+        <section id="view1" class="view-section active">
+            
+            <!-- Order Header (Shared style across all views) -->
+            <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm mb-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Order</p>
+                    <p class="font-bold text-navBg" data-order-id>-</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">ลูกค้า</p>
+                    <p class="font-bold text-navBg" data-order-team>ทีมวิ่ง Northwind</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">จำนวน</p>
+                    <p class="font-bold text-navBg" data-order-quantity>120 ตัว</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">กำหนดส่ง</p>
+                    <p class="font-bold text-navBg" data-order-date>28 ก.ย. 2569</p>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Form -->
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">ชื่อทีม / องค์กร *</label>
+                            <input id="teamName" type="text" value="ทีมวิ่ง Northwind" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-navBg">
+                        </div>
+                        <div>
+                            <label for="quantity" class="block text-sm text-gray-600 mb-1">จำนวน * <span class="text-xs text-gray-400">(ขั้นต่ำ <span id="minimumQuantity">10</span> ตัว)</span></label>
+                            <input id="quantity" type="number" value="120" min="1" step="1" inputmode="numeric" aria-label="จำนวนสินค้า" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-navBg">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">วันที่ต้องการรับ *</label>
+                            <input id="deliveryDate" type="date" value="2026-09-28" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-navBg">
+                        </div>
+                        <div class="pt-2">
+                            <button class="border border-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-50 transition">บันทึกร่าง</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Artwork -->
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-2">Artwork / Reference *</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-10 flex flex-col items-center justify-center bg-gray-50 mb-4 h-48">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="file" class="text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 cursor-pointer">
+                            </div>
+                            <p class="text-sm text-gray-500">รองรับ AI, PDF, PNG, JPG สูงสุด 50 MB</p>
+                        </div>
+                    </div>
+                    <!-- Action Button to Next Step -->
+                    <div class="flex justify-end">
+                        <button onclick="submitOrder()" class="bg-navBg text-white px-6 py-2.5 rounded-md hover:bg-opacity-90 transition font-medium shadow-sm">ส่งคำสั่งซื้อและไปตรวจแบบ</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== VIEW 2 : ตรวจแบบ 3D ================== -->
+        <section id="view2" class="view-section">
+            
+            <!-- Order Header -->
+            <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm mb-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Order</p>
+                    <p class="font-bold text-navBg" data-order-id>-</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">ลูกค้า</p>
+                    <p class="font-bold text-navBg" data-order-team>ทีมวิ่ง Northwind</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">จำนวน</p>
+                    <p class="font-bold text-navBg" data-order-quantity>120 ตัว</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">กำหนดส่ง</p>
+                    <p class="font-bold text-navBg" data-order-date>28 ก.ย. 2569</p>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: 3D Model Box -->
+                <div class="bg-[#eef2f6] rounded-xl border border-cardBorder h-80 flex items-center justify-center">
+                    <p class="text-gray-500 font-medium">[แสดงโมเดล 3D เสื้อกีฬา สีฟ้า/ดำ]</p>
+                </div>
+
+                <!-- Right: Artwork Details -->
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <h3 class="font-bold text-navBg text-lg">ARTWORK v3</h3>
+                        <span class="bg-green-100 text-green-700 text-xs px-2.5 py-0.5 rounded-full font-medium">รออนุมัติ</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-700">ไฟล์: <span class="font-semibold text-navBg">NW_RUN_v3.pdf</span></p>
+                        <p class="text-sm text-gray-500">แก้ไขโดย: บอส · Graphic</p>
+                    </div>
+                    
+                    <hr class="border-gray-200 mb-4">
+                    
+                    <div class="text-sm text-gray-600 flex-grow">
+                        <p>v3 ปรับโลโก้หน้าอก 2 ซม.</p>
+                        <p>v2 ปรับโทนสีแขน</p>
+                        <p>v1 แบบเริ่มต้น</p>
+                    </div>
+
+                    <!-- Action Button to Next Step -->
+                    <div class="flex flex-wrap justify-between gap-3 mt-6">
+                        <button type="button" onclick="goToView('view1')" class="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-md hover:bg-gray-50 transition font-medium"><i class="fa-solid fa-arrow-left mr-2" aria-hidden="true"></i>ย้อนกลับขั้นตอนก่อนหน้า</button>
+                        <button class="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-md hover:bg-gray-50 transition">ขอแก้ไข</button>
+                        <button onclick="approveDesign()" class="bg-navBg text-white px-6 py-2.5 rounded-md hover:bg-opacity-90 transition font-medium shadow-sm">อนุมัติและไปชำระเงิน</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== VIEW 3 : ชำระเงิน ================== -->
+        <section id="view3" class="view-section">
+            
+            <!-- Order Header -->
+            <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm mb-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Order</p>
+                    <p class="font-bold text-navBg" data-order-id>-</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">ลูกค้า</p>
+                    <p class="font-bold text-navBg" data-order-team>ทีมวิ่ง Northwind</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">จำนวน</p>
+                    <p class="font-bold text-navBg" data-order-quantity>120 ตัว</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">กำหนดส่ง</p>
+                    <p class="font-bold text-navBg" data-order-date>28 ก.ย. 2569</p>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Payment Form -->
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-navBg mb-6 text-lg">รายละเอียดการชำระ</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">จำนวนเงิน *</label>
+                                <input type="text" value="฿48,000.00" data-order-total class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-navBg bg-gray-50" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">ช่องทาง *</label>
+                                    <select id="paymentMethod" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-navBg bg-white">
+                                    <option>โอนผ่านธนาคาร</option>
+                                </select>
+                            </div>
+                            <div class="pt-2">
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-gray-50 text-center">
+                                    <label class="block text-sm text-gray-600 mb-2">แนบสลิปการโอน *</label>
+                                    <input type="file" class="text-sm text-gray-500 mb-2 file:mr-2 file:py-1 file:px-2 file:rounded file:border file:border-gray-300 file:text-xs file:bg-gray-100 file:text-gray-700 cursor-pointer">
+                                    <p class="text-xs text-gray-500">JPG, PNG หรือ PDF ไม่เกิน 10 MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Action Button to Next Step -->
+                    <div class="pt-6 flex flex-wrap justify-between items-center gap-3">
+                        <button type="button" onclick="goToView('view2')" class="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-md hover:bg-gray-50 transition font-medium"><i class="fa-solid fa-arrow-left mr-2" aria-hidden="true"></i>ย้อนกลับขั้นตอนก่อนหน้า</button>
+                        <button onclick="submitPayment()" class="w-auto bg-navBg text-white px-8 py-2.5 rounded-md hover:bg-opacity-90 transition font-medium shadow-sm">ยืนยันการชำระเงิน</button>
+                    </div>
+                </div>
+
+                <!-- Right: Order Summary -->
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm flex flex-col">
+                    <h3 class="font-bold text-navBg mb-6 text-lg">สรุปยอด</h3>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-gray-600 text-sm">ค่าสินค้า</p>
+                        <p class="font-bold text-navBg" data-order-total>฿48,000.00</p>
+                    </div>
+                    <div class="flex justify-between items-center mb-6">
+                        <p class="text-gray-600 text-sm">ค่าจัดส่ง</p>
+                        <p class="font-bold text-navBg">฿0.00</p>
+                    </div>
+                    
+                    <hr class="border-gray-200 mb-6">
+                    
+                    <div class="flex justify-between items-center mb-8">
+                        <p class="text-gray-800 font-medium">ยอดทั้งหมด</p>
+                        <p class="font-bold text-navBg text-lg" data-order-total>฿48,000.00</p>
+                    </div>
+
+                    <div class="bg-gray-50 border border-gray-200 text-gray-500 text-center py-4 rounded-md font-medium mt-auto">
+                        ยังไม่ได้ชำระเงิน
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== VIEW 4 : ติดตามสถานะ ================== -->
+        <section id="view4" class="view-section">
+            
+            <!-- Order Header -->
+            <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm mb-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Order</p>
+                    <p class="font-bold text-navBg" data-order-id>-</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">ลูกค้า</p>
+                    <p class="font-bold text-navBg" data-order-team>ทีมวิ่ง Northwind</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">จำนวน</p>
+                    <p class="font-bold text-navBg" data-order-quantity>120 ตัว</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">กำหนดส่ง</p>
+                    <p class="font-bold text-navBg" data-order-date>28 ก.ย. 2569</p>
+                </div>
+            </div>
+
+            <!-- Progress Card -->
+            <div class="bg-white rounded-xl border border-cardBorder p-8 shadow-sm max-w-3xl">
+                <h3 class="font-bold text-navBg text-xl mb-8">ความคืบหน้าคำสั่งซื้อ</h3>
+                
+                <div class="space-y-6">
+                    <!-- Status Item 1 -->
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-4">
+                        <p class="text-gray-700 font-medium">ชำระเงิน</p>
+                        <span class="bg-green-100 text-green-700 text-xs px-3 py-1.5 rounded-full font-medium border border-green-200">เสร็จแล้ว</span>
+                    </div>
+                    <!-- Status Item 2 -->
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-4">
+                        <p class="text-gray-700 font-medium">ตรวจแบบ</p>
+                        <span class="bg-green-100 text-green-700 text-xs px-3 py-1.5 rounded-full font-medium border border-green-200">เสร็จแล้ว</span>
+                    </div>
+                    <!-- Status Item 3 -->
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-4">
+                        <p class="text-gray-700 font-medium">ตัดเย็บ</p>
+                        <span class="bg-blue-100 text-blue-700 text-xs px-3 py-1.5 rounded-full font-medium border border-blue-200">กำลังทำ</span>
+                    </div>
+                    <!-- Status Item 4 -->
+                    <div class="flex justify-between items-center">
+                        <p class="text-gray-700 font-medium">QC และจัดส่ง</p>
+                        <span class="bg-gray-100 text-gray-500 text-xs px-3 py-1.5 rounded-full font-medium border border-gray-200">รอดำเนินการ</span>
+                    </div>
+                </div>
+
+                <!-- Action Button to go Back -->
+                <div class="mt-10 flex flex-wrap justify-between gap-3">
+                    <button type="button" onclick="goToView('view3')" class="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-md hover:bg-gray-50 transition font-medium"><i class="fa-solid fa-arrow-left mr-2" aria-hidden="true"></i>ย้อนกลับขั้นตอนก่อนหน้า</button>
+                    <button onclick="goToView('view5')" class="bg-navBg text-white px-6 py-2.5 rounded-md hover:bg-opacity-90 transition font-medium shadow-sm">ดูสรุปรายการทั้งหมด</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== VIEW 5 : สรุปรายการ ================== -->
+        <section id="view5" class="view-section">
+            <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm mb-6">
+                <div class="flex flex-wrap justify-between items-start gap-4">
+                    <div>
+                        <p class="text-gray-400 text-xs mb-1">สรุปรายการคำสั่งซื้อ</p>
+                        <h2 class="font-bold text-navBg text-2xl">ดำเนินการครบทุกขั้นตอนแล้ว</h2>
+                    </div>
+                    <span class="bg-green-100 text-green-700 text-sm px-3 py-1.5 rounded-full font-medium">ชำระเงินเรียบร้อย</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm">
+                    <h3 class="font-bold text-navBg text-lg mb-5">รายละเอียดคำสั่งซื้อ</h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">หมายเลขคำสั่งซื้อ</span><span class="font-semibold text-navBg" data-order-id>-</span></div>
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">ทีม / องค์กร</span><span id="summaryTeamName" data-order-team class="font-semibold text-right">ทีมวิ่ง Northwind</span></div>
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">จำนวน</span><span id="summaryQuantity" data-order-quantity class="font-semibold">120 ตัว</span></div>
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">วันที่ต้องการรับ</span><span id="summaryDeliveryDate" data-order-date class="font-semibold">28 ก.ย. 2569</span></div>
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">สินค้า</span><span class="font-semibold" data-product-name>เสื้อสั่งทำ</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-cardBorder p-6 shadow-sm">
+                    <h3 class="font-bold text-navBg text-lg mb-5">สรุปการชำระเงินและสถานะ</h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">ยอดรวม</span><span class="font-bold text-navBg" data-order-total>฿48,000.00</span></div>
+                        <div class="flex justify-between gap-4"><span class="text-gray-500">ช่องทางชำระเงิน</span><span id="summaryPaymentMethod" class="font-semibold">โอนผ่านธนาคาร</span></div>
+                        <div class="border-t border-gray-100 pt-4 space-y-3">
+                            <div class="flex justify-between"><span>สร้างคำสั่งซื้อ</span><span class="text-green-600 font-medium">เสร็จแล้ว</span></div>
+                            <div class="flex justify-between"><span>ตรวจแบบ</span><span class="text-green-600 font-medium">เสร็จแล้ว</span></div>
+                            <div class="flex justify-between"><span>ชำระเงิน</span><span class="text-green-600 font-medium">เสร็จแล้ว</span></div>
+                            <div class="flex justify-between"><span>ตัดเย็บและจัดส่ง</span><span class="text-blue-600 font-medium">กำลังดำเนินการ</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3 mt-8">
+                <button type="button" onclick="goToView('view4')" class="border border-gray-300 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-50 transition font-medium"><i class="fa-solid fa-arrow-left mr-2" aria-hidden="true"></i>ย้อนกลับขั้นตอนก่อนหน้า</button>
+                <a href="Mainpage.html" class="bg-navBg text-white px-8 py-3 rounded-md hover:bg-opacity-90 transition font-medium shadow-sm">กลับสู่หน้าหลัก</a>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        if (localStorage.getItem('dazLoggedIn') !== 'true' && sessionStorage.getItem('dazLoggedIn') !== 'true') {
+            window.location.replace('login.html');
+        }
+
+        function getSelectedProduct() {
+            try {
+                return JSON.parse(sessionStorage.getItem('dazSelectedProduct') || 'null');
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function updateOrderPreview(orderId = sessionStorage.getItem('dazActiveOrder')) {
+            const product = getSelectedProduct() || { name: 'เสื้อสั่งทำ', price: 400, min: 1 };
+            const minimum = Math.max(1, Number(product.min) || 1);
+            const quantityInput = document.getElementById('quantity');
+            const quantity = Number(quantityInput.value) || 0;
+            const total = (Number(product.price) || 400) * quantity;
+            const teamName = document.getElementById('teamName').value.trim() || '-';
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            const formattedDate = deliveryDate
+                ? new Date(`${deliveryDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
+                : '-';
+            const formattedTotal = `฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            quantityInput.min = String(minimum);
+            document.getElementById('minimumQuantity').textContent = minimum;
+            document.querySelectorAll('[data-order-id]').forEach(element => {
+                element.textContent = orderId ? `#${orderId}` : '-';
+            });
+            document.querySelectorAll('[data-order-team]').forEach(element => {
+                element.textContent = teamName;
+            });
+            document.querySelectorAll('[data-order-quantity]').forEach(element => {
+                element.textContent = `${quantity} ตัว`;
+            });
+            document.querySelectorAll('[data-order-date]').forEach(element => {
+                element.textContent = formattedDate;
+            });
+            document.querySelectorAll('[data-order-total]').forEach(element => {
+                if ('value' in element) element.value = formattedTotal;
+                else element.textContent = formattedTotal;
+            });
+            document.querySelectorAll('[data-product-name]').forEach(element => {
+                element.textContent = product.name || 'เสื้อสั่งทำ';
+            });
+        }
+
+        /**
+         * Function to handle view switching
+         * @param {string} targetViewId - The ID of the section to display (view1, view2, etc.)
+         */
+        function goToView(targetViewId) {
+            // 1. Get all view sections
+            const views = document.querySelectorAll('.view-section');
+            
+            // 2. Hide all views
+            views.forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            // 3. Show the target view
+            const target = document.getElementById(targetViewId);
+            if(target) {
+                updateOrderPreview();
+                if (targetViewId === 'view5') {
+                    document.getElementById('summaryPaymentMethod').textContent = document.getElementById('paymentMethod').value || '-';
+                }
+                target.classList.add('active');
+                // Scroll to top automatically when changing pages like a real SPA
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function renderCurrentOrderStatus() {
+            const statusPanel = document.getElementById('active-order-status');
+            const orders = getUserOrders();
+            const activeOrderId = sessionStorage.getItem('dazActiveOrder');
+            const order = orders.find(item => item.id === activeOrderId)
+                || orders.sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt))[0];
+            const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[character]));
+
+            if (!order) {
+                statusPanel.classList.add('hidden');
+                return;
+            }
+
+            const stages = ['รับคำสั่งซื้อ', 'ตรวจแบบ', 'ชำระเงิน', 'ผลิต', 'ตรวจคุณภาพและจัดส่ง'];
+            const isCancelled = order.status === 'ยกเลิกแล้ว';
+            const currentStage = isCancelled ? -1 : ({
+                'รอตรวจแบบ': 1,
+                'รอชำระเงิน': 2,
+                'กำลังผลิต': 3,
+                'กำลังตรวจสอบคุณภาพ': 4,
+                'กำลังจัดส่ง': 4,
+                'จัดส่งแล้ว': 5,
+                'เสร็จสิ้น': 5
+            }[order.status] ?? 1);
+
+            statusPanel.classList.remove('hidden');
+            statusPanel.innerHTML = `
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500">คำสั่งซื้อปัจจุบัน · #${escapeHtml(order.id)}</p>
+                        <h2 class="mt-1 text-lg font-semibold text-navBg">${escapeHtml(order.teamName || 'คำสั่งซื้อของคุณ')}</h2>
+                    </div>
+                    <span class="inline-flex items-center gap-2 rounded-full ${isCancelled ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-800'} px-3 py-1.5 text-sm font-semibold">
+                        <i class="fa-solid ${isCancelled ? 'fa-ban' : 'fa-circle-dot'}" aria-hidden="true"></i>${escapeHtml(order.status || 'รอตรวจแบบ')}
+                    </span>
+                </div>
+                ${isCancelled ? '<p class="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">ออเดอร์นี้ถูกยกเลิกโดยผู้ดูแล</p>' : ''}
+                <ol class="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-5" aria-label="ขั้นตอนคำสั่งซื้อ">
+                    ${stages.map((stage, index) => `
+                        <li class="order-progress-step flex items-center gap-2 sm:flex-col sm:gap-2 sm:text-center${index === currentStage ? ' is-current' : ''}" style="--step-index:${index}">
+                            <span class="order-progress-marker flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isCancelled ? 'bg-gray-100 text-gray-400' : index < currentStage ? 'bg-emerald-600 text-white' : index === currentStage ? 'bg-amber-400 text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400'}">
+                                ${!isCancelled && index < currentStage ? '<i class="fa-solid fa-check" aria-hidden="true"></i>' : index + 1}
+                            </span>
+                            <span class="text-sm ${index === currentStage ? 'font-semibold text-gray-900' : 'text-gray-500'}">${stage}</span>
+                        </li>
+                    `).join('')}
+                </ol>`;
+        }
+
+        function submitOrder() {
+            const teamName = document.getElementById('teamName').value.trim();
+            const quantity = Number(document.getElementById('quantity').value);
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            const selectedProduct = getSelectedProduct();
+            const minimum = Math.max(1, Number(selectedProduct?.min) || 1);
+
+            if (!teamName || !Number.isInteger(quantity) || !deliveryDate) {
+                alert('กรุณากรอกข้อมูลคำสั่งซื้อให้ครบถ้วน');
+                return;
+            }
+            if (quantity < minimum) {
+                alert(`สินค้านี้กำหนดจำนวนขั้นต่ำ ${minimum} ตัว`);
+                return;
+            }
+
+            const order = createOrder({
+                teamName,
+                quantity,
+                deliveryDate,
+                product: selectedProduct || { name: 'เสื้อสั่งทำ', price: 400 },
+                total: (selectedProduct ? selectedProduct.price : 400) * quantity
+            });
+            sessionStorage.setItem('dazActiveOrder', order.id);
+            updateOrderPreview(order.id);
+            renderCurrentOrderStatus();
+            goToView('view2');
+        }
+
+        function approveDesign() {
+            const activeOrderId = sessionStorage.getItem('dazActiveOrder');
+            if (!updateOrderStatus(activeOrderId, 'รอชำระเงิน')) {
+                alert('ไม่พบคำสั่งซื้อ กรุณาสร้างคำสั่งซื้อใหม่');
+                return;
+            }
+            renderCurrentOrderStatus();
+            goToView('view3');
+        }
+
+        function submitPayment() {
+            const orders = readStore(APP_KEYS.orders, []);
+            const activeOrderId = sessionStorage.getItem('dazActiveOrder');
+            const order = orders.find(item => item.id === activeOrderId);
+            if (!order) {
+                alert('ไม่พบคำสั่งซื้อ กรุณาสร้างคำสั่งซื้อใหม่');
+                return;
+            }
+            order.status = 'กำลังผลิต';
+            order.paymentMethod = document.getElementById('paymentMethod').value;
+            order.paidAt = new Date().toISOString();
+            writeStore(APP_KEYS.orders, orders);
+            renderCurrentOrderStatus();
+            goToView('view4');
+        }
+
+        const quantityInput = document.getElementById('quantity');
+        const selectedProduct = getSelectedProduct() || { min: 1 };
+        quantityInput.min = String(Math.max(1, Number(selectedProduct.min) || 1));
+        document.getElementById('minimumQuantity').textContent = quantityInput.min;
+        ['teamName', 'quantity', 'deliveryDate'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => updateOrderPreview());
+        });
+        updateOrderPreview();
+        renderCurrentOrderStatus();
+
+        window.addEventListener('storage', event => {
+            if (event.key === APP_KEYS.orders) renderCurrentOrderStatus();
+        });
+    </script>
+</body>
+</html>

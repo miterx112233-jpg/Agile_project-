@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แคตตาล็อกสินค้า - CustomTee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- ใช้ฟอนต์ Prompt เพื่อให้ภาษาไทยดูสวยงามและทันสมัย -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#3B82F6', // Blue 500
+                        primaryHover: '#2563EB', // Blue 600
+                        dark: '#1F2937', // Gray 800
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ เพื่อความสวยงาม */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Animation สำหรับ Dropdown */
+        .dropdown-menu {
+            transition: all 0.2s ease-in-out;
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            visibility: hidden;
+        }
+        .group:hover .dropdown-menu {
+            transform: scaleY(1);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .order-progress-step {
+            opacity: 0;
+            animation: order-step-reveal 0.4s ease-out forwards;
+            animation-delay: calc(var(--step-index, 0) * 70ms);
+        }
+        .order-progress-marker {
+            transition: background-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+        }
+        .order-progress-step.is-current .order-progress-marker {
+            animation: order-current-step 0.5s ease-out both;
+            animation-delay: calc(var(--step-index, 0) * 70ms + 160ms);
+        }
+        @keyframes order-step-reveal {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes order-current-step {
+            0% { transform: scale(0.88); }
+            65% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .order-progress-step,
+            .order-progress-step.is-current .order-progress-marker {
+                animation: none;
+                opacity: 1;
+                transform: none;
+            }
+            .order-progress-marker { transition: none; }
+        }
+
+        html.dark-mode body {
+            background-color: #0f172a !important;
+            background-image:
+                repeating-linear-gradient(0deg, rgba(245, 184, 46, 0.025) 0 1px, transparent 1px 6px),
+                repeating-linear-gradient(90deg, rgba(245, 184, 46, 0.025) 0 1px, transparent 1px 6px);
+            color: #e2e8f0 !important;
+        }
+        html.dark-mode .bg-white { background-color: #172033 !important; }
+        html.dark-mode .bg-gray-50 { background-color: #111827 !important; }
+        html.dark-mode .bg-gray-100 { background-color: #263244 !important; }
+        html.dark-mode .bg-gray-200 { background-color: #334155 !important; }
+        html.dark-mode .bg-blue-50 { background-color: #1e3a5f !important; }
+        html.dark-mode .bg-gray-900 { background-color: #f5b82e !important; color: #112233 !important; }
+        html.dark-mode .text-dark,
+        html.dark-mode .text-gray-800,
+        html.dark-mode .text-gray-700 { color: #e2e8f0 !important; }
+        html.dark-mode .text-gray-600 { color: #cbd5e1 !important; }
+        html.dark-mode .text-gray-500,
+        html.dark-mode .text-gray-400 { color: #94a3b8 !important; }
+        html.dark-mode .border-gray-100,
+        html.dark-mode .border-gray-200,
+        html.dark-mode .border-gray-300 { border-color: #334155 !important; }
+        html.dark-mode input:not([type="checkbox"]) {
+            background-color: #0f172a;
+            border-color: #475569;
+            color: #f8fafc;
+        }
+        html.dark-mode input::placeholder { color: #94a3b8; }
+        html.dark-mode .peer:checked + span {
+            background-color: #f5b82e !important;
+            color: #112233 !important;
+        }
+    </style>
+    <script>
+        try {
+            if (localStorage.getItem('dazTheme') === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        } catch (error) {}
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20">
+                <!-- Logo -->
+                <div class="flex items-center cursor-pointer">
+                    <img src="logo.png" alt="DT Sport Wears" class="w-44 h-14 object-contain mr-3">
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="#" class="px-4 py-2 text-gray-600 hover:text-primary font-medium transition rounded-md hover:bg-gray-50">หน้าแรก</a>
+                    
+                    <!-- Dropdown: ประเภทเสื้อ -->
+                    <div class="relative group px-2 py-2">
+                        <button class="flex items-center text-primary font-medium transition cursor-pointer">
+                            ประเภทเสื้อ <i class="fa-solid fa-chevron-down text-xs ml-2 mt-0.5"></i>
+                        </button>
+                        <div class="dropdown-menu absolute left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-50">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition">เสื้อยืดคอกลม / คอวี</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition">เสื้อโปโล</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition">เสื้อแจ็คเก็ต / ฮู้ด</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition">เสื้อกีฬา (ผ้าไมโคร)</a>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: บริการสกรีน/ปัก -->
+                    <div class="relative group px-2 py-2">
+                        <a href="CustomerPortal.html" class="flex items-center text-gray-600 hover:text-primary font-medium transition cursor-pointer">
+                            บริการสั่งพิมพ์เสื้อผ้า <i></i>
+                        </a>
+                        
+                        </div>
+                    </div>
+                    
+                   
+                </div>
+
+                <!-- Right Side Actions (Cart & Login) -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <button type="button" data-theme-toggle aria-label="เปิดโหมดมืด" title="เปิดโหมดมืด" aria-pressed="false" class="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        <i class="fa-solid fa-moon" aria-hidden="true"></i>
+                    </button>
+                    <button id="cart-button" class="text-gray-500 hover:text-primary transition relative p-2" aria-label="เปิดคำสั่งซื้อ">
+                        <i class="fa-solid fa-cart-shopping text-xl"></i>
+                        <span data-cart-count class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">0</span>
+                    </button>
+                    <button type="button" data-clear-cart class="hidden rounded-lg p-2 text-red-600 transition hover:bg-red-50" aria-label="ล้างตะกร้า" title="ล้างตะกร้า">
+                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                    </button>
+                    
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-primary focus:outline-none p-2">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu" class="hidden bg-white border-t border-gray-100 absolute w-full shadow-xl z-50">
+            <div class="px-4 pt-2 pb-6 space-y-1">
+                <a href="#" class="block px-3 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-md">หน้าแรก</a>
+                
+                <!-- Mobile Dropdown Alternative -->
+                <div class="px-3 py-2">
+                    <p class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">ประเภทเสื้อ</p>
+                    <div class="pl-4 border-l-2 border-gray-100 space-y-1">
+                        <a href="#" class="block px-3 py-2 text-base font-medium text-primary bg-blue-50 rounded-md">เสื้อยืดคอกลม / คอวี</a>
+                        <a href="#" class="block px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-primary rounded-md">เสื้อโปโล</a>
+                        <a href="#" class="block px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-primary rounded-md">เสื้อฮู้ด / แจ็คเก็ต</a>
+                    </div>
+                </div>
+
+                <div class="px-3 py-2">
+                    <p class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">บริการของเรา</p>
+                    <div class="pl-4 border-l-2 border-gray-100 space-y-1">
+                        <a href="CustomerPortal.html" class="block px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-primary rounded-md">บริการสั่งพิมพ์เสื้อผ้า</a>
+                    </div>
+                </div>
+
+                <button type="button" data-theme-toggle aria-label="เปิดโหมดมืด" title="เปิดโหมดมืด" aria-pressed="false" class="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-base font-medium text-gray-700 transition hover:bg-gray-50">
+                    <i class="fa-solid fa-moon w-5 text-center" aria-hidden="true"></i>
+                    <span>เปลี่ยนธีม</span>
+                </button>
+
+                <button type="button" data-clear-cart class="hidden w-full rounded-md px-3 py-3 text-left text-base font-medium text-red-700 transition hover:bg-red-50">
+                    <i class="fa-solid fa-trash-can mr-2" aria-hidden="true"></i>ล้างตะกร้า
+                </button>
+
+                <a href="login.html" onclick="localStorage.removeItem('dazLoggedIn'); localStorage.removeItem('dazUser'); sessionStorage.removeItem('dazLoggedIn'); sessionStorage.removeItem('dazUser');" class="block px-3 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-md">ออกจากระบบ</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header & Filters -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-dark mb-2">แคตตาล็อกสินค้า</h1>
+                    <p class="text-gray-500 text-lg">เลือกแบบเสื้อที่คุณต้องการเพื่อเริ่มต้นการสั่งทำ</p>
+                </div>
+                
+                <!-- Filters / Search -->
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="relative w-full md:w-64">
+                        <input type="text" placeholder="ค้นหาแบบเสื้อ..." class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-sm transition">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-gray-400"></i>
+                    </div>
+                    <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 transition flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-filter md:mr-2"></i> <span class="hidden md:inline text-sm font-medium">ตัวกรอง</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Grid Section -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+
+        <section id="order-tracker" class="mb-12" aria-labelledby="order-tracker-title"></section>
+        
+        <!-- Category Title -->
+        <div id="product-catalog" class="flex items-center mb-8 scroll-mt-24">
+            <h2 class="text-2xl font-bold text-dark">เสื้อยืด (T-Shirts)</h2>
+            <div class="h-px bg-gray-300 flex-grow ml-6"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            
+            <!-- Product Card 1 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                <div class="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                    <img src="Cotton.png" alt="เสื้อยืดคอกลม Cotton 100%" class="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-green-600 shadow-sm">
+                        ขายดี
+                    </div>
+                </div>
+                <div class="p-5 flex flex-col flex-grow">
+                    <h3 class="font-bold text-lg text-dark mb-1 group-hover:text-primary transition-colors">เสื้อยืดคอกลม Cotton 100%</h3>
+                    <p class="text-sm text-gray-500 mb-4 line-clamp-2">เนื้อผ้านุ่ม ระบายอากาศได้ดีเยี่ยม เหมาะสำหรับใส่ในชีวิตประจำวันหรือเสื้อทีม</p>
+                    
+                    <div class="space-y-2 mb-6 mt-auto">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-layer-group w-4 text-center mr-1"></i> เนื้อผ้า:</span>
+                            <span class="font-medium text-gray-800">Cotton 100% (No.32)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-boxes-stacked w-4 text-center mr-1"></i> ขั้นต่ำ:</span>
+                            <span class="font-medium text-gray-800">10 ตัว</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end justify-between mt-auto pt-4 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-0.5">ราคาเริ่มต้น</p>
+                            <p class="text-xl font-bold text-primary">฿120<span class="text-sm font-normal text-gray-500">/ตัว</span></p>
+                        </div>
+                        <button class="bg-gray-900 hover:bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+                            เลือกแบบนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Card 2 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                <div class="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                    <img src="Polyester.png" alt="เสื้อยืดคอวี ผ้า Polyester TK" class="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500">
+                </div>
+                <div class="p-5 flex flex-col flex-grow">
+                    <h3 class="font-bold text-lg text-dark mb-1 group-hover:text-primary transition-colors">เสื้อยืดคอวี ผ้า TK</h3>
+                    <p class="text-sm text-gray-500 mb-4 line-clamp-2">ผ้าทิ้งตัว ยับยาก สีสดทนนาน เหมาะสำหรับงานกิจกรรมหรืองานสกรีน Sublimation</p>
+                    
+                    <div class="space-y-2 mb-6 mt-auto">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-layer-group w-4 text-center mr-1"></i> เนื้อผ้า:</span>
+                            <span class="font-medium text-gray-800">Polyester (TK)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-boxes-stacked w-4 text-center mr-1"></i> ขั้นต่ำ:</span>
+                            <span class="font-medium text-gray-800">20 ตัว</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end justify-between mt-auto pt-4 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-0.5">ราคาเริ่มต้น</p>
+                            <p class="text-xl font-bold text-primary">฿85<span class="text-sm font-normal text-gray-500">/ตัว</span></p>
+                        </div>
+                        <button class="bg-gray-900 hover:bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+                            เลือกแบบนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Product Card 3 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                <div class="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                    <img src="Cotton.png" alt="ตัวอย่างเสื้อยืดทรง Oversize" class="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute top-3 left-3 bg-blue-100/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-blue-700 shadow-sm">
+                        มาใหม่
+                    </div>
+                </div>
+                <div class="p-5 flex flex-col flex-grow">
+                    <h3 class="font-bold text-lg text-dark mb-1 group-hover:text-primary transition-colors">เสื้อยืดทรง Oversize</h3>
+                    <p class="text-sm text-gray-500 mb-4 line-clamp-2">ทรงไหล่ตก สไตล์สตรีท เนื้อผ้าหนานุ่มอยู่ทรง ทันสมัยวัยรุ่นชอบ</p>
+                    
+                    <div class="space-y-2 mb-6 mt-auto">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-layer-group w-4 text-center mr-1"></i> เนื้อผ้า:</span>
+                            <span class="font-medium text-gray-800">Cotton 100% (No.20)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-boxes-stacked w-4 text-center mr-1"></i> ขั้นต่ำ:</span>
+                            <span class="font-medium text-gray-800">10 ตัว</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end justify-between mt-auto pt-4 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-0.5">ราคาเริ่มต้น</p>
+                            <p class="text-xl font-bold text-primary">฿160<span class="text-sm font-normal text-gray-500">/ตัว</span></p>
+                        </div>
+                        <button class="bg-gray-900 hover:bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+                            เลือกแบบนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Category Title 2 -->
+        <div class="flex items-center mb-8">
+            <h2 class="text-2xl font-bold text-dark">เสื้อโปโล (Polo Shirts)</h2>
+            <div class="h-px bg-gray-300 flex-grow ml-6"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            <!-- Product Card 4 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                <div class="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                    <img src="CVC.png" alt="เสื้อโปโล CVC Cotton ผสม" class="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500">
+                </div>
+                <div class="p-5 flex flex-col flex-grow">
+                    <h3 class="font-bold text-lg text-dark mb-1 group-hover:text-primary transition-colors">เสื้อโปโล จั๊มครึ่งรอบ</h3>
+                    <p class="text-sm text-gray-500 mb-4 line-clamp-2">ผ้าทอจูติ ทรงสวยเรียบร้อย เหมาะสำหรับทำเป็นยูนิฟอร์มพนักงานบริษัท</p>
+                    
+                    <div class="space-y-2 mb-6 mt-auto">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-layer-group w-4 text-center mr-1"></i> เนื้อผ้า:</span>
+                            <span class="font-medium text-gray-800">CVC (Cotton ผสม)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-boxes-stacked w-4 text-center mr-1"></i> ขั้นต่ำ:</span>
+                            <span class="font-medium text-gray-800">30 ตัว</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end justify-between mt-auto pt-4 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-0.5">ราคาเริ่มต้น</p>
+                            <p class="text-xl font-bold text-primary">฿220<span class="text-sm font-normal text-gray-500">/ตัว</span></p>
+                        </div>
+                        <button class="bg-gray-900 hover:bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+                            เลือกแบบนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Card 5 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                <div class="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                    <img src="Micro.png" alt="เสื้อโปโล Micro Polyester" class="w-full h-full object-contain p-3 opacity-100 transition-opacity duration-300 group-hover:opacity-0">
+                    <img src="Polo%20sport.jpg" alt="ตัวอย่างเสื้อโปโลทีมกีฬา" class="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                </div>
+                <div class="p-5 flex flex-col flex-grow">
+                    <h3 class="font-bold text-lg text-dark mb-1 group-hover:text-primary transition-colors">เสื้อโปโล สปอร์ต</h3>
+                    <p class="text-sm text-gray-500 mb-4 line-clamp-2">เนื้อผ้ามันลื่น ระบายเหงื่อได้ดี แห้งไว เหมาะกับกิจกรรมกลางแจ้งหรือกีฬาสี</p>
+                    
+                    <div class="space-y-2 mb-6 mt-auto">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-layer-group w-4 text-center mr-1"></i> เนื้อผ้า:</span>
+                            <span class="font-medium text-gray-800">Micro Polyester</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500"><i class="fa-solid fa-boxes-stacked w-4 text-center mr-1"></i> ขั้นต่ำ:</span>
+                            <span class="font-medium text-gray-800">20 ตัว</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end justify-between mt-auto pt-4 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-0.5">ราคาเริ่มต้น</p>
+                            <p class="text-xl font-bold text-primary">฿180<span class="text-sm font-normal text-gray-500">/ตัว</span></p>
+                        </div>
+                        <button class="bg-gray-900 hover:bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+                            เลือกแบบนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Simple Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>&copy; 2026 CustomTee. All rights reserved. | ออกแบบและผลิตเสื้อยืดครบวงจร</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <!-- JavaScript for Mobile Menu Toggle -->
+    <script>
+        if (localStorage.getItem('dazLoggedIn') !== 'true' && sessionStorage.getItem('dazLoggedIn') !== 'true') {
+            window.location.replace('login.html');
+        }
+
+        const themeToggleButtons = document.querySelectorAll('[data-theme-toggle]');
+
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.documentElement.classList.toggle('dark-mode', isDark);
+            themeToggleButtons.forEach(button => {
+                const label = isDark ? 'เปิดโหมดสว่าง' : 'เปิดโหมดมืด';
+                button.setAttribute('aria-label', label);
+                button.setAttribute('title', label);
+                button.setAttribute('aria-pressed', String(isDark));
+                button.querySelector('i').classList.toggle('fa-moon', !isDark);
+                button.querySelector('i').classList.toggle('fa-sun', isDark);
+                const text = button.querySelector('span');
+                if (text) text.textContent = isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด';
+            });
+        }
+
+        applyTheme(localStorage.getItem('dazTheme') || 'light');
+        themeToggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const nextTheme = document.documentElement.classList.contains('dark-mode') ? 'light' : 'dark';
+                applyTheme(nextTheme);
+                localStorage.setItem('dazTheme', nextTheme);
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('mobile-menu-btn');
+            const menu = document.getElementById('mobile-menu');
+            const icon = btn.querySelector('i');
+            const tracker = document.getElementById('order-tracker');
+            const orderStages = ['รับคำสั่งซื้อ', 'ตรวจแบบ', 'ชำระเงิน', 'ผลิต', 'ตรวจคุณภาพและจัดส่ง'];
+            const statusSteps = {
+                'รอตรวจแบบ': 1,
+                'รอชำระเงิน': 2,
+                'กำลังผลิต': 3,
+                'กำลังตรวจสอบคุณภาพ': 4,
+                'กำลังจัดส่ง': 4,
+                'จัดส่งแล้ว': 5,
+                'เสร็จสิ้น': 5
+            };
+            const orders = getUserOrders().sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+
+            tracker.innerHTML = '<div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></span><div><h2 id="order-tracker-title" class="text-2xl font-bold text-dark">ติดตามสถานะคำสั่งซื้อ</h2><p class="text-sm text-gray-500">ความคืบหน้ารายการสั่งซื้อของคุณ</p></div></div><a href="#product-catalog" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"><i class="fa-solid fa-shirt" aria-hidden="true"></i> เริ่มสั่งพิมพ์เสื้อ</a></div>';
+
+            if (orders.length === 0) {
+                tracker.insertAdjacentHTML('beforeend', '<div class="border-y border-gray-200 bg-white px-5 py-6 text-sm text-gray-600">ยังไม่มีคำสั่งซื้อ เลือกแบบเสื้อเพื่อเริ่มสั่งซื้อและติดตามสถานะที่นี่</div>');
+            } else {
+                orders.slice(0, 5).forEach(order => {
+                    const isCancelled = order.status === 'ยกเลิกแล้ว';
+                    const currentStep = isCancelled ? -1 : statusSteps[order.status] ?? 1;
+                    const orderPanel = document.createElement('article');
+                    orderPanel.className = 'mb-4 border border-gray-200 bg-white p-5 shadow-sm';
+
+                    const header = document.createElement('div');
+                    header.className = 'mb-5 flex flex-wrap items-start justify-between gap-3';
+                    const details = document.createElement('div');
+                    const team = document.createElement('h3');
+                    team.className = 'font-semibold text-gray-900';
+                    team.textContent = order.teamName || 'คำสั่งซื้อ';
+                    const orderInfo = document.createElement('p');
+                    orderInfo.className = 'mt-1 text-sm text-gray-500';
+                    orderInfo.textContent = `#${order.id} · ${order.quantity} ตัว`;
+                    details.append(team, orderInfo);
+
+                    const currentStatus = document.createElement('span');
+                    currentStatus.className = `inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${isCancelled ? 'bg-red-50 text-red-800' : 'bg-emerald-50 text-emerald-800'}`;
+                    currentStatus.innerHTML = `<i class="fa-solid ${isCancelled ? 'fa-ban' : 'fa-circle-dot'}" aria-hidden="true"></i>`;
+                    currentStatus.append(document.createTextNode(` ${order.status || 'รอตรวจแบบ'}`));
+                    header.append(details, currentStatus);
+
+                    const steps = document.createElement('ol');
+                    steps.className = 'grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-5';
+                    steps.setAttribute('aria-label', 'ขั้นตอนคำสั่งซื้อ');
+                    orderStages.forEach((stage, index) => {
+                        const item = document.createElement('li');
+                        item.className = `order-progress-step flex items-center gap-2 sm:flex-col sm:gap-2 sm:text-center${index === currentStep ? ' is-current' : ''}`;
+                        item.style.setProperty('--step-index', index);
+                        const marker = document.createElement('span');
+                        marker.className = `order-progress-marker ${isCancelled ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400' : index < currentStep
+                            ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white'
+                            : index === currentStep
+                                ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-400 text-white ring-4 ring-amber-100'
+                            : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400'}`;
+                        marker.innerHTML = !isCancelled && index < currentStep
+                            ? '<i class="fa-solid fa-check" aria-hidden="true"></i>'
+                            : `<span>${index + 1}</span>`;
+                        const label = document.createElement('span');
+                        label.className = index === currentStep ? 'text-sm font-semibold text-gray-900' : 'text-sm text-gray-500';
+                        label.textContent = stage;
+                        item.append(marker, label);
+                        steps.append(item);
+                    });
+
+                    orderPanel.append(header, steps);
+                    if (isCancelled) {
+                        const cancelledNote = document.createElement('p');
+                        cancelledNote.className = 'mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700';
+                        cancelledNote.textContent = 'ออเดอร์นี้ถูกยกเลิกโดยผู้ดูแล';
+                        orderPanel.insertBefore(cancelledNote, steps);
+                    }
+                    tracker.append(orderPanel);
+                });
+            }
+
+            const productButtons = Array.from(document.querySelectorAll('button'))
+                .filter(button => button.textContent.trim() === 'เลือกแบบนี้');
+            productButtons.forEach((button, index) => {
+                if (PRODUCTS[index]) button.addEventListener('click', () => startOrder(PRODUCTS[index].id));
+            });
+
+            document.getElementById('cart-button').addEventListener('click', () => {
+                const cart = getCart();
+                if (cart.length === 0) {
+                    alert('ยังไม่มีสินค้าในตะกร้า กรุณาเลือกแบบเสื้อก่อน');
+                    return;
+                }
+                window.location.href = 'CustomerPortal.html';
+            });
+
+            document.querySelectorAll('[data-clear-cart]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const cart = getCart();
+                    if (cart.length === 0) return;
+
+                    const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+                    if (!window.confirm(`ยืนยันล้างสินค้า ${itemCount} ชิ้นที่ยังไม่ได้สั่งซื้อออกจากตะกร้าหรือไม่?`)) return;
+
+                    clearCart();
+                    alert('ล้างตะกร้าเรียบร้อยแล้ว');
+                });
+            });
+
+            btn.addEventListener('click', () => {
+                menu.classList.toggle('hidden');
+                // สลับไอคอนระหว่าง Hamburger กับ กากบาท(Close)
+                if(menu.classList.contains('hidden')) {
+                    icon.classList.remove('fa-xmark');
+                    icon.classList.add('fa-bars');
+                } else {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-xmark');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

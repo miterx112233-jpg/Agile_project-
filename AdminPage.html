@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ผู้จัดการ - DAZ T DESIGN</title>
+  <style>
+    .page-loading {
+      min-height: 100vh;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      gap: 12px;
+      background: #f8fafc;
+      color: #334155;
+      font: 500 14px/1.5 sans-serif;
+    }
+    .page-loading__spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #cbd5e1;
+      border-top-color: #1e3a5f;
+      border-radius: 50%;
+      animation: page-loading-spin 0.8s linear infinite;
+    }
+    @keyframes page-loading-spin {
+      to { transform: rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .page-loading__spinner { animation-duration: 2s; }
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.3.1",
+        "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.468.0?external=react"
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
+</head>
+<body>
+  <div id="root">
+    <main class="page-loading" role="status" aria-live="polite">
+      <span class="page-loading__spinner" aria-hidden="true"></span>
+      <span>กำลังโหลดหน้าผู้จัดการ...</span>
+    </main>
+  </div>
+  <script type="text/babel" data-type="module" data-presets="react">
+import React, { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { 
+  Package, Users, LayoutTemplate, Bell, ChevronDown, 
+  Inbox, FileText, CreditCard, Box, 
+  Search, Filter, MoreHorizontal, AlertCircle, Calendar, Printer
+} from 'lucide-react';
+
+const ORDER_STORAGE_KEY = 'dazOrders';
+const ORDER_STATUSES = [
+  'รอตรวจแบบ',
+  'รอชำระเงิน',
+  'กำลังผลิต',
+  'กำลังตรวจสอบคุณภาพ',
+  'กำลังจัดส่ง',
+  'จัดส่งแล้ว',
+  'เสร็จสิ้น'
+];
+
+function readCustomerOrders() {
+  try {
+    const orders = JSON.parse(localStorage.getItem(ORDER_STORAGE_KEY) || '[]');
+    return Array.isArray(orders) ? orders : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function formatOrderDate(value) {
+  if (!value) return 'ยังไม่ระบุ';
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const Navbar = ({ currentView, setCurrentView }) => {
+  return (
+    <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
+      <div className="flex items-center gap-8">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <img src="logo.png" alt="DT Sport Wears" className="h-12 w-36 object-contain" />
+          <span className="text-sm font-bold text-slate-800">DT SPORT WEARS</span>
+        </div>
+
+        {/* Tabs */}
+        <div className="hidden md:flex items-center gap-2">
+          <button 
+            onClick={() => setCurrentView('orders')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${currentView === 'orders' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+          >
+            <Package size={18} className={currentView === 'orders' ? 'text-blue-600' : ''} />
+            Orders
+          </button>
+          <button 
+            onClick={() => setCurrentView('customers')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${currentView === 'customers' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+          >
+            <Users size={18} className={currentView === 'customers' ? 'text-blue-600' : ''} />
+            Customers
+          </button>
+          <button 
+            onClick={() => setCurrentView('production')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${currentView === 'production' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+          >
+            <LayoutTemplate size={18} className={currentView === 'production' ? 'text-blue-600' : ''} />
+            Production
+          </button>
+        </div>
+      </div>
+
+      {/* Right Icons */}
+      <div className="flex items-center gap-6">
+        <button className="text-slate-400 hover:text-slate-600 relative">
+          <Bell size={20} />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+        </button>
+        <div className="flex items-center gap-3 cursor-pointer">
+          <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
+            AL
+          </div>
+          <div className="hidden lg:block">
+            <p className="text-sm font-medium text-slate-800 leading-tight">Alex Lee</p>
+            <p className="text-xs text-slate-500">Order manager</p>
+          </div>
+          <ChevronDown size={16} className="text-slate-400" />
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+const OrdersView = ({ orders, selectedOrderId, selectedOrder, onSelectOrder, onUpdateStatus, onCancelOrder, openModal }) => {
+  const waitingForReview = orders.filter(order => order.status === 'รอตรวจแบบ').length;
+  const pendingPayment = orders.filter(order => order.status === 'รอชำระเงิน').length;
+  const inProduction = orders.filter(order => ['กำลังผลิต', 'กำลังตรวจสอบคุณภาพ', 'กำลังจัดส่ง'].includes(order.status)).length;
+
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900 mb-1">Order management</h1>
+        <p className="text-slate-500 text-sm">ติดตามคำสั่งซื้อได้ตั้งแต่ตรวจแบบไปจนถึงการผลิตและจัดส่ง</p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="bg-[#1e3a5f] rounded-xl p-5 shadow-sm text-white flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <span className="text-sm font-medium text-blue-100">Customer Orders</span>
+            <Inbox size={20} className="text-blue-200" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold mb-1">{orders.length}</h2>
+            <p className="text-xs text-blue-200/80">จำนวนออเดอร์ที่ลูกค้าส่งเข้ามา</p>
+          </div>
+        </div>
+        
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <span className="text-sm font-medium text-slate-600">Waiting for Review</span>
+            <FileText size={20} className="text-slate-400" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-1">{waitingForReview}</h2>
+            <p className="text-xs text-slate-500">รายการที่รอตรวจแบบ</p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <span className="text-sm font-medium text-slate-600">Pending Payment</span>
+            <CreditCard size={20} className="text-slate-400" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-1">{pendingPayment}</h2>
+            <p className="text-xs text-slate-500">รายการที่รอชำระเงิน</p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <span className="text-sm font-medium text-slate-600">In Production</span>
+            <Box size={20} className="text-slate-400" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-1">{inProduction}</h2>
+            <p className="text-xs text-slate-500">รายการที่อยู่ระหว่างการผลิต</p>
+          </div>
+        </div>
+      </div>
+
+      <section className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="customer-orders-heading">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h2 id="customer-orders-heading" className="font-semibold text-slate-800">Customer orders</h2>
+          <span className="text-sm text-slate-500">{orders.length} orders</span>
+        </div>
+        {orders.length === 0 ? (
+          <p className="px-5 py-8 text-center text-sm text-slate-500">ยังไม่มีคำสั่งซื้อจากฝั่งลูกค้า</p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {orders.map(order => (
+              <button
+                key={order.id}
+                type="button"
+                onClick={() => onSelectOrder(order.id)}
+                aria-pressed={selectedOrderId === order.id}
+                className={`grid w-full grid-cols-1 gap-2 px-5 py-4 text-left transition-colors sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-6 ${selectedOrderId === order.id ? 'bg-blue-50/70' : 'hover:bg-slate-50'}`}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-slate-800">#{order.id} · {order.teamName || order.user || 'ลูกค้า'}</span>
+                  <span className="mt-1 block truncate text-xs text-slate-500">{order.product?.name || 'เสื้อสั่งทำ'} · {order.quantity || 0} ตัว</span>
+                </span>
+                <span className="text-sm text-slate-600">ส่ง {formatOrderDate(order.deliveryDate)}</span>
+                <span className={`justify-self-start rounded-full px-3 py-1 text-xs font-medium sm:justify-self-end ${order.status === 'ยกเลิกแล้ว' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}`}>{order.status || 'รอตรวจแบบ'}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {selectedOrder ? (
+        <>
+      {/* Workspace Header */}
+      <div className="flex justify-between items-end border-b border-slate-200 pb-4 mb-6">
+        <div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Order Workspace</p>
+          <h2 className="text-2xl font-bold text-slate-800">#{selectedOrder.id}</h2>
+        </div>
+        <p className="text-sm text-slate-500">ข้อมูลคำสั่งซื้อจากฝั่งลูกค้า</p>
+      </div>
+
+      {/* Workspace Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Order Details Card */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-slate-800">Order details</h3>
+              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">Custom order</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-y-6 gap-x-8">
+              <div>
+                <p className="text-sm text-slate-500 flex items-center gap-2 mb-1"><span className="text-slate-400 font-mono text-xs">#</span> Order ID</p>
+                <p className="font-medium text-slate-800">#{selectedOrder.id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 flex items-center gap-2 mb-1"><Users size={14} className="text-slate-400"/> Customer Name</p>
+                <p className="font-medium text-slate-800">{selectedOrder.teamName || selectedOrder.user || 'ลูกค้า'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 flex items-center gap-2 mb-1"><Package size={14} className="text-slate-400"/> Quantity</p>
+                <p className="font-medium text-slate-800">{selectedOrder.quantity || 0} ตัว</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 flex items-center gap-2 mb-1"><Calendar size={14} className="text-slate-400"/> Due Date</p>
+                <p className="font-medium text-slate-800">{formatOrderDate(selectedOrder.deliveryDate)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Customer Order Details */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-800 mb-1">รายการสินค้าที่สั่ง</h3>
+              <p className="text-sm text-slate-500">ข้อมูลจากคำสั่งซื้อของลูกค้า</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-slate-500">สินค้า</p>
+                <p className="mt-1 font-medium text-slate-800">{selectedOrder.product?.name || 'เสื้อสั่งทำ'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">ยอดรวม</p>
+                <p className="mt-1 font-medium text-slate-800">฿{Number(selectedOrder.total || 0).toLocaleString('th-TH')}</p>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">
+              บัญชีลูกค้า: {selectedOrder.user || 'ไม่ระบุ'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column (1/3) */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Manager Actions Card */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-slate-800">Manager actions</h3>
+              <span className={`px-3 py-1 text-xs font-medium rounded-full ${selectedOrder.status === 'ยกเลิกแล้ว' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{selectedOrder.status || 'รอตรวจแบบ'}</span>
+            </div>
+
+            <div className="space-y-5 flex-grow">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Order status</label>
+                <select
+                  aria-label="Order status"
+                  value={selectedOrder.status || 'รอตรวจแบบ'}
+                  onChange={event => onUpdateStatus(selectedOrder.id, event.target.value)}
+                  disabled={selectedOrder.status === 'ยกเลิกแล้ว'}
+                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {selectedOrder.status === 'ยกเลิกแล้ว' && <option value="ยกเลิกแล้ว">ยกเลิกแล้ว</option>}
+                  {ORDER_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">อีเมลบัญชีลูกค้า</label>
+                <p className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800">{selectedOrder.user || 'ไม่ระบุ'}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-slate-100">
+              <button 
+                onClick={openModal}
+                className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-medium py-3 px-4 rounded-lg shadow-sm transition-colors"
+              >
+                <Printer size={18} className="text-slate-500"/>
+                ปริ้นใบสั่งผลิตดิจิทัล
+              </button>
+              {selectedOrder.status === 'ยกเลิกแล้ว' ? (
+                <p className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700">
+                  <AlertCircle size={16} /> ออเดอร์นี้ถูกยกเลิกแล้ว
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onCancelOrder(selectedOrder.id)}
+                  className="mt-3 w-full rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
+                >
+                  ยกเลิกออเดอร์
+                </button>
+              )}
+              <p className="text-xs text-slate-400 mt-3 text-center leading-relaxed">
+                สร้างใบสั่งผลิต PDF จากรายละเอียดคำสั่งซื้อที่มีในระบบ
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+        </>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+          <Package size={28} className="mx-auto mb-3 text-slate-400" />
+          <p className="font-medium text-slate-700">เลือกคำสั่งซื้อเพื่อดูรายละเอียด</p>
+          <p className="mt-1 text-sm text-slate-500">รายการและสถานะจะแสดงเมื่อมีคำสั่งซื้อจากลูกค้า</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PrintModal = ({ isOpen, onClose, order }) => {
+  if (!isOpen || !order) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Modal Header */}
+        <div className="border-b border-slate-100 px-8 py-5 flex items-center justify-between bg-white">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-1">ปริ้นใบสั่งผลิต</h2>
+            <p className="text-sm text-slate-500">ใบสั่งผลิตสำหรับคำสั่งซื้อ #{order.id}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 text-sm font-semibold rounded-md">#{order.id}</span>
+            <span className="px-3 py-1.5 bg-slate-50 text-slate-600 text-sm rounded-md border border-slate-100">ส่ง {formatOrderDate(order.deliveryDate)}</span>
+            <span className={`px-3 py-1.5 text-sm font-medium rounded-md ${order.status === 'ยกเลิกแล้ว' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{order.status || 'รอตรวจแบบ'}</span>
+          </div>
+        </div>
+
+        {/* Modal Body */}
+        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* Left: Mockup */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm h-full flex flex-col">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-base font-semibold text-slate-800">รายละเอียดคำสั่งซื้อ</h3>
+                <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full">{order.quantity || 0} ตัว</span>
+              </div>
+              
+              <div className="flex-1 border border-slate-200 rounded-lg overflow-hidden flex flex-col bg-slate-50">
+                <div className="bg-[#1e3a5f] text-white p-3 flex justify-between items-center">
+                  <span className="text-sm font-medium">{order.teamName || order.user || 'ลูกค้า'}</span>
+                  <span className="text-xs text-blue-200">{order.product?.name || 'เสื้อสั่งทำ'}</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center p-8">
+                  {/* Mockup Placeholder Graphic */}
+                  <div className="w-48 h-56 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-center justify-center p-2 relative">
+                     <div className="w-full h-full border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-[#1e3a5f] rounded-lg flex items-center justify-center text-white font-bold text-2xl mb-3 shadow-inner">
+                          {(order.teamName || 'ลูกค้า').slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-semibold text-center text-[#1e3a5f]">{order.teamName || order.user || 'ลูกค้า'}</span>
+                     </div>
+                  </div>
+                  <p className="text-slate-400 text-sm mt-6">Front print mockup</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-4 leading-relaxed">
+                ภาพตัวอย่างนี้ใช้แทนไฟล์ artwork ซึ่งยังไม่ได้บันทึกจากฝั่งลูกค้า
+              </p>
+            </div>
+
+            {/* Right: Details */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-base font-semibold text-slate-800">Production details</h3>
+                <span className="text-xs text-slate-400">เอกสารสำหรับส่งต่อฝ่ายผลิต</span>
+              </div>
+
+              <div className="overflow-hidden border border-slate-200 rounded-lg mb-6">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold text-slate-600 w-1/3">FIELD</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">VALUE</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Order ID</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">#{order.id}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Customer</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{order.teamName || order.user || 'ลูกค้า'}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Due Date</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{formatOrderDate(order.deliveryDate)}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">สถานะ</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{order.status || 'รอตรวจแบบ'}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Total Qty</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{order.quantity || 0} ตัว</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Fabric Type</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{order.product?.fabric || order.product?.name || 'ไม่ระบุ'}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Print Location</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">ไม่ระบุ</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-slate-500">Ink Color</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">ไม่ระบุ</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">ข้อมูลเพิ่มเติม</h4>
+                <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">ยังไม่มีรายละเอียดไซซ์ ตำแหน่งสกรีน หรือสีหมึกในคำสั่งซื้อนี้</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="border-t border-slate-200 px-8 py-4 bg-white flex justify-between items-center">
+          <p className="text-xs text-slate-400">สร้างจากคำสั่งซื้อ #{order.id}</p>
+          <div className="flex gap-3">
+            <button 
+              onClick={onClose}
+              className="px-6 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Close
+            </button>
+            <button onClick={() => window.print()} className="px-6 py-2 bg-[#1e3a5f] text-white font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
+              Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CustomersView = ({ orders }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const customersByEmail = new Map();
+
+  orders.forEach(order => {
+    const email = order.user || 'ไม่ระบุอีเมล';
+    const customer = customersByEmail.get(email) || {
+      id: (order.teamName || email).slice(0, 2).toUpperCase(),
+      name: order.teamName || 'ลูกค้า',
+      role: 'บัญชีลูกค้า',
+      email,
+      phone: 'ไม่ระบุ',
+      orders: 0,
+      spent: 0,
+      color: 'bg-blue-100 text-blue-700'
+    };
+    customer.orders += 1;
+    customer.spent += Number(order.total) || (Number(order.product?.price) || 0) * (Number(order.quantity) || 0);
+    customersByEmail.set(email, customer);
+  });
+
+  const customers = [...customersByEmail.values()].filter(customer =>
+    `${customer.name} ${customer.email}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto h-full flex flex-col">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900 mb-1">Customer Management</h1>
+          <p className="text-slate-500 text-sm">Your teams, contacts and order history, all in one place.</p>
+        </div>
+        <div className="flex gap-3">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search by team or name..." 
+              value={searchTerm}
+              onChange={event => setSearchTerm(event.target.value)}
+              className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-64 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm bg-white"
+            />
+          </div>
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
+            <Filter size={16} /> Filter
+          </button>
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
+        {/* Table Header Area */}
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white">
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-slate-800">All customers</h2>
+            <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">{customers.length}</span>
+          </div>
+          <span className="text-xs text-slate-500">เรียงตามความเคลื่อนไหวล่าสุด</span>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto flex-1">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+              <tr>
+                <th className="px-6 py-4 font-medium flex items-center gap-2"><Users size={14}/> Customer / Team Name</th>
+                <th className="px-6 py-4 font-medium">Contact Email & Phone</th>
+                <th className="px-6 py-4 font-medium">Total Orders</th>
+                <th className="px-6 py-4 font-medium">Total Spent</th>
+                <th className="px-6 py-4 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {customers.map(customer => (
+                <tr key={customer.email} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${customer.color}`}>
+                        {customer.id}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900">{customer.name}</p>
+                        <p className="text-xs text-slate-500">{customer.role}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-slate-800">{customer.email}</p>
+                    <p className="text-xs text-slate-500">{customer.phone}</p>
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">{customer.orders} orders</td>
+                  <td className="px-6 py-4 font-medium text-slate-900">฿{customer.spent.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                  <td className="px-6 py-4">
+                    <button className="px-3 py-1.5 border border-slate-200 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                      View Profile
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {customers.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="px-6 py-10 text-center text-sm text-slate-500">
+                    {orders.length === 0 ? 'ยังไม่มีข้อมูลลูกค้าจากคำสั่งซื้อ' : 'ไม่พบลูกค้าที่ค้นหา'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50">
+          <span className="text-sm text-slate-500">แสดง {customers.length} จาก {customersByEmail.size} บัญชี</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const KanbanCard = ({ order }) => (
+  <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+    <div className="flex justify-between items-start mb-3">
+      <span className="text-sm font-bold text-slate-800">{order.id}</span>
+      <button className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+        <MoreHorizontal size={16} />
+      </button>
+    </div>
+    
+    <div className="flex items-start gap-3 mb-4">
+      <div className="mt-1 text-slate-400">
+        <LayoutTemplate size={18} />
+      </div>
+      <div>
+        <h4 className="font-medium text-slate-900 text-sm mb-0.5">{order.customer}</h4>
+        <p className="text-xs text-slate-500 leading-tight">{order.detail}</p>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-2 mb-4">
+      <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border ${
+        order.overdue 
+          ? 'bg-red-50 text-red-700 border-red-100' 
+          : order.isToday 
+            ? 'bg-orange-50 text-orange-700 border-orange-100'
+            : 'bg-slate-50 text-slate-600 border-slate-200'
+      }`}>
+        <Calendar size={12} />
+        กำหนดส่ง · {order.date}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-100">
+      <span className={`text-[11px] font-medium ${order.overdue ? 'text-red-600 flex items-center gap-1' : 'text-slate-500'}`}>
+        {order.overdue && <AlertCircle size={12} />}
+        {order.overdue ? 'Overdue - Prioritize job ticket' : order.isToday ? 'Due today - ' + order.status : order.status}
+      </span>
+      <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold border border-white outline outline-1 outline-slate-200">
+        {order.assignee}
+      </div>
+    </div>
+  </div>
+);
+
+const ProductionView = ({ orders }) => {
+  const toKanbanOrder = order => ({
+    id: `#${order.id}`,
+    customer: order.teamName || order.user || 'ลูกค้า',
+    detail: `${order.quantity || 0} ตัว · ${order.product?.name || 'เสื้อสั่งทำ'}`,
+    date: formatOrderDate(order.deliveryDate),
+    overdue: false,
+    isToday: false,
+    status: order.status || 'รอตรวจแบบ',
+    assignee: (order.user || order.teamName || 'CU').slice(0, 2).toUpperCase()
+  });
+  const reviewOrders = orders.filter(order => order.status === 'รอตรวจแบบ');
+  const paymentOrders = orders.filter(order => order.status === 'รอชำระเงิน');
+  const productionOrders = orders.filter(order => order.status === 'กำลังผลิต');
+  const fulfillmentOrders = orders.filter(order => ['กำลังตรวจสอบคุณภาพ', 'กำลังจัดส่ง', 'จัดส่งแล้ว', 'เสร็จสิ้น'].includes(order.status));
+
+  return (
+    <div className="p-8 max-w-[1600px] mx-auto h-[calc(100vh-65px)] flex flex-col">
+      {/* Header */}
+      <div className="flex justify-between items-end mb-6">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-semibold text-slate-900">Production Kanban Board</h1>
+            <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md border border-slate-200">{orders.length} customer orders</span>
+          </div>
+          <p className="text-slate-500 text-sm">ติดตามคำสั่งซื้อของลูกค้าตามสถานะล่าสุด</p>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
+          <Filter size={16} /> Filter
+        </button>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button className="px-3 py-1.5 bg-white shadow-sm rounded-md text-sm font-medium text-slate-800 flex items-center gap-2">
+              <LayoutTemplate size={16} className="text-blue-600"/> Board view
+            </button>
+            <button className="px-3 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-2">
+              เรียงตามกำหนดส่ง <ChevronDown size={14}/>
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500">สถานะอัปเดตจากคำสั่งซื้อลูกค้า</p>
+      </div>
+
+      {/* Kanban Board */}
+      <div className="flex-1 flex gap-6 overflow-x-auto pb-4 min-h-0">
+        
+        {/* Column 1 */}
+        <div className="w-[340px] flex-shrink-0 flex flex-col bg-slate-50 rounded-xl border border-slate-200">
+          <div className="p-4 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-slate-800 text-sm">Artwork Review</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">รอตรวจแบบจากลูกค้า</p>
+            </div>
+            <span className="w-6 h-6 rounded bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center">{reviewOrders.length}</span>
+          </div>
+          <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+            {reviewOrders.map(order => <KanbanCard key={order.id} order={toKanbanOrder(order)} />)}
+            <button className="w-full py-2.5 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs font-medium hover:bg-slate-100 hover:text-slate-700 transition-colors">
+              {reviewOrders.length === 0 ? 'ไม่มีคำสั่งซื้อในขั้นตอนนี้' : `${reviewOrders.length} คำสั่งซื้อ`}
+            </button>
+          </div>
+        </div>
+
+        {/* Column 2 */}
+        <div className="w-[340px] flex-shrink-0 flex flex-col bg-slate-50 rounded-xl border border-slate-200">
+          <div className="p-4 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-slate-800 text-sm">Awaiting Payment</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">รอลูกค้าชำระเงิน</p>
+            </div>
+            <span className="w-6 h-6 rounded bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center">{paymentOrders.length}</span>
+          </div>
+          <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+            {paymentOrders.map(order => <KanbanCard key={order.id} order={toKanbanOrder(order)} />)}
+            <button className="w-full py-2.5 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs font-medium hover:bg-slate-100 hover:text-slate-700 transition-colors">
+              {paymentOrders.length === 0 ? 'ไม่มีคำสั่งซื้อในขั้นตอนนี้' : `${paymentOrders.length} คำสั่งซื้อ`}
+            </button>
+          </div>
+        </div>
+
+        {/* Column 3 */}
+        <div className="w-[340px] flex-shrink-0 flex flex-col bg-slate-50 rounded-xl border border-slate-200">
+          <div className="p-4 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-slate-800 text-sm">In Production</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">กำลังผลิตสินค้า</p>
+            </div>
+            <span className="w-6 h-6 rounded bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center">{productionOrders.length}</span>
+          </div>
+          <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+            {productionOrders.map(order => <KanbanCard key={order.id} order={toKanbanOrder(order)} />)}
+            <button className="w-full py-2.5 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs font-medium hover:bg-slate-100 hover:text-slate-700 transition-colors">
+              {productionOrders.length === 0 ? 'ไม่มีคำสั่งซื้อในขั้นตอนนี้' : `${productionOrders.length} คำสั่งซื้อ`}
+            </button>
+          </div>
+        </div>
+
+        {/* Column 4 */}
+        <div className="w-[340px] flex-shrink-0 flex flex-col bg-slate-50 rounded-xl border border-slate-200">
+          <div className="p-4 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-slate-800 text-sm">Quality & Shipping</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">ตรวจคุณภาพและจัดส่ง</p>
+            </div>
+            <span className="w-6 h-6 rounded bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center">{fulfillmentOrders.length}</span>
+          </div>
+          <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+            {fulfillmentOrders.map(order => <KanbanCard key={order.id} order={toKanbanOrder(order)} />)}
+            <button className="w-full py-2.5 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs font-medium hover:bg-slate-100 hover:text-slate-700 transition-colors">
+              {fulfillmentOrders.length === 0 ? 'ไม่มีคำสั่งซื้อในขั้นตอนนี้' : `${fulfillmentOrders.length} คำสั่งซื้อ`}
+            </button>
+          </div>
+        </div>
+
+      </div>
+      
+      {/* Footer Info */}
+      <div className="mt-4 flex justify-between items-center text-xs text-slate-400 border-t border-slate-200 pt-4">
+        <span className="flex items-center gap-1"><MoreHorizontal size={14}/> บอร์ดแสดงคำสั่งซื้อตามสถานะล่าสุด</span>
+        <span>{orders.length} รายการจากคำสั่งซื้อทั้งหมด</span>
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  const [currentView, setCurrentView] = useState('orders'); // 'orders', 'customers', 'production'
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [orders, setOrders] = useState(readCustomerOrders);
+  const [selectedOrderId, setSelectedOrderId] = useState(() => readCustomerOrders().at(-1)?.id || null);
+  const selectedOrder = orders.find(order => order.id === selectedOrderId) || null;
+
+  useEffect(() => {
+    const syncOrders = event => {
+      if (event.key && event.key !== ORDER_STORAGE_KEY) return;
+      const nextOrders = readCustomerOrders();
+      setOrders(nextOrders);
+      setSelectedOrderId(currentId => nextOrders.some(order => order.id === currentId)
+        ? currentId
+        : nextOrders.at(-1)?.id || null);
+    };
+
+    window.addEventListener('storage', syncOrders);
+    return () => window.removeEventListener('storage', syncOrders);
+  }, []);
+
+  function updateOrderStatus(orderId, status) {
+    const nextOrders = readCustomerOrders().map(order => order.id === orderId
+      ? { ...order, status, updatedAt: new Date().toISOString() }
+      : order);
+    localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(nextOrders));
+    setOrders(nextOrders);
+  }
+
+  function cancelOrder(orderId) {
+    const order = readCustomerOrders().find(item => item.id === orderId);
+    if (!order || order.status === 'ยกเลิกแล้ว') return;
+    if (!window.confirm(`ยืนยันยกเลิกออเดอร์ #${orderId} หรือไม่?`)) return;
+
+    const cancelledAt = new Date().toISOString();
+    const nextOrders = readCustomerOrders().map(item => item.id === orderId
+      ? { ...item, status: 'ยกเลิกแล้ว', cancelledAt, updatedAt: cancelledAt }
+      : item);
+    localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(nextOrders));
+    setOrders(nextOrders);
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900">
+      <Navbar currentView={currentView} setCurrentView={setCurrentView} />
+      
+      <main className="animate-in fade-in duration-300">
+        {currentView === 'orders' && <OrdersView orders={orders} selectedOrderId={selectedOrderId} selectedOrder={selectedOrder} onSelectOrder={setSelectedOrderId} onUpdateStatus={updateOrderStatus} onCancelOrder={cancelOrder} openModal={() => setIsModalOpen(true)} />}
+        {currentView === 'customers' && <CustomersView orders={orders} />}
+        {currentView === 'production' && <ProductionView orders={orders} />}
+      </main>
+
+      <PrintModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} order={selectedOrder} />
+
+      {/* Global styles for custom scrollbar within kanban if needed, though Tailwind mostly handles it, adding a small style block for aesthetics */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 20px;
+        }
+      `}} />
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
